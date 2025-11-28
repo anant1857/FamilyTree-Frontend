@@ -10,6 +10,7 @@ export default function RelationshipForm({ members, onSubmit, onCancel, isLoadin
   })
 
   const [errors, setErrors] = useState({})
+  const [helperText, setHelperText] = useState("")
 
   const validateForm = () => {
     const newErrors = {}
@@ -25,6 +26,18 @@ export default function RelationshipForm({ members, onSubmit, onCancel, isLoadin
     setFormData((prev) => ({ ...prev, [name]: value }))
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }))
+    }
+
+    if (name === "relationshipType") {
+      if (value === "parent") {
+        setHelperText("If person 1 has a spouse, they will automatically be set as parent too.")
+      } else if (value === "child") {
+        setHelperText("If person 2 has a spouse, the child will be linked to both parents.")
+      } else if (value === "spouse") {
+        setHelperText("Spouses will automatically share all children relationships.")
+      } else {
+        setHelperText("")
+      }
     }
   }
 
@@ -92,6 +105,7 @@ export default function RelationshipForm({ members, onSubmit, onCancel, isLoadin
           <option value="sibling">is sibling of</option>
         </select>
         {errors.relationshipType && <p className="text-red-500 text-sm mt-1">{errors.relationshipType}</p>}
+        {helperText && <p className="text-blue-600 text-sm mt-1 italic">{helperText}</p>}
       </div>
 
       <div className="flex gap-3 justify-end pt-4">
