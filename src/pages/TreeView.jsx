@@ -87,9 +87,9 @@ export default function TreeView({ onLogout }) {
   }, [members, childrenMap])
 
   const layout = useMemo(() => {
-    const nodeSize = 150
-    const levelGap = 170
-    const siblingGap = 70
+    const nodeSize = 150  // Reduced for mobile
+    const levelGap = window.innerWidth < 640 ? 140 : 170  // Responsive vertical spacing
+    const siblingGap = window.innerWidth < 640 ? 40 : 100  // Responsive horizontal spacing
 
     const coords = {}
     let currentX = 0
@@ -99,7 +99,11 @@ export default function TreeView({ onLogout }) {
 
       const spouseId = spouseMap[memberId]
       const coupleKey =
-        spouseId && memberId < spouseId ? `${memberId}-${spouseId}` : spouseId ? `${spouseId}-${memberId}` : null
+        spouseId && memberId < spouseId
+          ? `${memberId}-${spouseId}`
+          : spouseId
+          ? `${spouseId}-${memberId}`
+          : null
 
       if (coupleKey && visitedCouples.has(coupleKey)) return
 
@@ -165,43 +169,49 @@ export default function TreeView({ onLogout }) {
   }
 
   const generations = useMemo(() => {
-    const gens = Array.from(new Set(members.map((m) => (typeof m.generation === "number" ? m.generation : 0))))
+    const gens = Array.from(
+      new Set(members.map((m) => (typeof m.generation === "number" ? m.generation : 0))),
+    )
     return gens.sort((a, b) => a - b)
   }, [members])
 
   const filteredMembers =
-    selectedGeneration === "all" ? members : members.filter((m) => m.generation === Number(selectedGeneration))
+    selectedGeneration === "all"
+      ? members
+      : members.filter((m) => m.generation === Number(selectedGeneration))
 
   const allPlaced = Object.values(layout.coords)
   const maxX = allPlaced.length ? Math.max(...allPlaced.map((c) => c.x)) : 0
   const minX = allPlaced.length ? Math.min(...allPlaced.map((c) => c.x)) : 0
   const maxY = allPlaced.length ? Math.max(...allPlaced.map((c) => c.y)) : 0
 
-  const contentWidth = maxX - minX + 260
-  const svgWidth = Math.max(contentWidth, 960)
-  const svgHeight = Math.max(maxY + 300, 420)
+  const contentWidth = maxX - minX + (window.innerWidth < 640 ? 200 : 260)
+  const svgWidth = Math.max(contentWidth, window.innerWidth < 640 ? 360 : 960)
+  const svgHeight = Math.max(maxY + (window.innerWidth < 640 ? 250 : 300), window.innerWidth < 640 ? 360 : 420)
 
   const horizontalPadding = (svgWidth - contentWidth) / 2 - minX
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
       <Header onLogout={onLogout} />
 
-      <main className="container py-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Family Tree</h1>
-            <p className="text-sm text-slate-600">
+      <main className="container py-4 sm:py-8 px-2 sm:px-0">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
+          <div className="w-full sm:w-auto">
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 tracking-tight leading-tight">
+              Family Tree
+            </h1>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1 hidden sm:block">
               Visualize relationships across generations with an interactive tree.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-white/80 backdrop-blur px-3 py-2 rounded-full shadow-sm border border-slate-200">
-            <span className="text-xs font-medium text-slate-600">Filter by generation</span>
+          <div className="flex items-center gap-2 sm:gap-3 bg-slate-800 backdrop-blur px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg border border-slate-700 w-full sm:w-auto">
+            <span className="text-xs font-medium text-slate-400 whitespace-nowrap">Filter:</span>
             <select
               value={selectedGeneration}
               onChange={(e) => setSelectedGeneration(e.target.value)}
-              className="rounded-full border-none bg-slate-100 text-xs font-medium text-slate-800 px-3 py-1 focus:ring-2 focus:ring-indigo-400"
+              className="rounded-full border-none bg-slate-700 text-xs font-medium text-slate-200 px-2 sm:px-3 py-1 focus:ring-2 focus:ring-blue-400 outline-none w-full sm:w-auto text-left"
             >
               <option value="all">All</option>
               {generations.map((g) => (
@@ -213,65 +223,85 @@ export default function TreeView({ onLogout }) {
           </div>
         </div>
 
-        {error && <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>}
+        {error && (
+          <div className="mb-4 sm:mb-6 bg-red-900/30 border border-red-500/50 text-red-300 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium text-sm">
+            {error}
+          </div>
+        )}
 
         {loading ? (
-          <div className="text-center py-16">
-            <p className="text-slate-500 text-lg">Loading family tree…</p>
+          <div className="text-center py-12 sm:py-16">
+            <p className="text-slate-400 text-base sm:text-lg">Loading family tree…</p>
           </div>
         ) : members.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-slate-500 text-lg">No family members added yet</p>
+          <div className="text-center py-12 sm:py-16">
+            <p className="text-slate-400 text-base sm:text-lg">No family members added yet</p>
           </div>
         ) : (
-          <div className="rounded-3xl bg-[#3d3d3d] shadow-xl border border-slate-200 p-6 overflow-auto">
-            <div className="min-w-full">
-              <svg width="100%" height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="block mx-auto">
+          <div className="rounded-2xl sm:rounded-3xl bg-slate-800/50 shadow-2xl border border-slate-700 p-3 sm:p-6 overflow-hidden backdrop-blur max-w-full">
+            <div className="w-full overflow-auto">
+              <svg
+                width="100%"
+                height={svgHeight}
+                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                className="block mx-auto max-h-[60vh] sm:max-h-[70vh] w-full"
+                preserveAspectRatio="xMidYMid meet"
+              >
                 <defs>
                   <linearGradient id="nodeGradientPrimary" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#EEF2FF" />
-                    <stop offset="100%" stopColor="#DBEAFE" />
+                    <stop offset="0%" stopColor="#0ea5e9" />
+                    <stop offset="100%" stopColor="#06b6d4" />
                   </linearGradient>
                   <linearGradient id="nodeGradientSecondary" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#F5F3FF" />
-                    <stop offset="100%" stopColor="#E0F2FE" />
+                    <stop offset="0%" stopColor="#0369a1" />
+                    <stop offset="100%" stopColor="#0c4a6e" />
                   </linearGradient>
                   <linearGradient id="edgeGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#CBD5F5" />
-                    <stop offset="100%" stopColor="#E5E7EB" />
+                    <stop offset="0%" stopColor="#64748b" />
+                    <stop offset="100%" stopColor="#475569" />
                   </linearGradient>
                   <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="#00000022" />
+                    <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#00000044" />
                   </filter>
                 </defs>
 
-                <g transform={`translate(${horizontalPadding}, 40)`}>
+                <g transform={`translate(${horizontalPadding}, ${window.innerWidth < 640 ? 20 : 40})`}>
                   {/* Connectors */}
-                  <g stroke="url(#edgeGradient)" strokeWidth="2.2">
-                    {/* Spouse connectors + heart */}
+                  <g stroke="url(#edgeGradient)" strokeWidth="1.8 sm:stroke-width-2.2">
+                    {/* Spouse connectors + heart - MOBILE FRIENDLY */}
                     {filteredMembers.map((m) => {
                       const spouseId = spouseMap[m._id]
-                      if (!spouseId || !layout.coords[m._id] || !layout.coords[spouseId]) return null
+                      if (!spouseId || !layout.coords[m._id] || !layout.coords[spouseId])
+                        return null
                       if (m._id > spouseId) return null
                       const a = layout.coords[m._id]
                       const b = layout.coords[spouseId]
-                      const y = a.y + 52
-                      const x1 = a.x + 48
-                      const x2 = b.x + 48
+                      const y = a.y + (window.innerWidth < 640 ? 42 : 52)
+                      const x1 = a.x + (window.innerWidth < 640 ? 38 : 48)
+                      const x2 = b.x + (window.innerWidth < 640 ? 38 : 48)
                       const mid = (x1 + x2) / 2
+                      const heartSize = window.innerWidth < 640 ? 10 : 13
+                      const heartOffset = window.innerWidth < 640 ? 11 : 14
                       return (
                         <g key={`spouse-${m._id}-${spouseId}`}>
-                          <line x1={x1} y1={y} x2={mid - 14} y2={y} />
-                          <line x1={mid + 14} y1={y} x2={x2} y2={y} />
-                          <circle cx={mid} cy={y} r="13" fill="#F97373" filter="url(#softShadow)" />
-                          <text x={mid} y={y + 4} textAnchor="middle" fontSize="11" fill="white">
+                          <line x1={x1} y1={y} x2={mid - heartOffset} y2={y} strokeLinecap="round"/>
+                          <line x1={mid + heartOffset} y1={y} x2={x2} y2={y} strokeLinecap="round"/>
+                          <circle cx={mid} cy={y} r={heartSize} fill="#f43f5e" filter="url(#softShadow)" />
+                          <text
+                            x={mid}
+                            y={y + (window.innerWidth < 640 ? 3 : 4)}
+                            textAnchor="middle"
+                            fontSize={window.innerWidth < 640 ? "9" : "11"}
+                            fill="white"
+                            fontWeight="bold"
+                          >
                             ♥
                           </text>
                         </g>
                       )
                     })}
 
-                    {/* Parent -> child connectors */}
+                    {/* Parent -> child connectors - MOBILE FRIENDLY */}
                     {Object.entries(childrenMap).map(([parentId, kids]) => {
                       const parent = memberMap[parentId]
                       if (!parent || !layout.coords[parentId]) return null
@@ -279,26 +309,29 @@ export default function TreeView({ onLogout }) {
                       const spouseId = spouseMap[parentId]
                       const parentPos = layout.coords[parentId]
                       const spousePos = spouseId ? layout.coords[spouseId] : null
-                      const parentCenterX = spousePos ? (parentPos.x + spousePos.x + 96) / 2 : parentPos.x + 48
-                      const parentBottomY = parentPos.y + 100
+                      const parentCenterX = spousePos
+                        ? (parentPos.x + spousePos.x + (window.innerWidth < 640 ? 76 : 96)) / 2
+                        : parentPos.x + (window.innerWidth < 640 ? 38 : 48)
+                      const parentBottomY = parentPos.y + (window.innerWidth < 640 ? 80 : 100)
 
                       return kids.map((childId) => {
                         const childPos = layout.coords[childId]
                         if (!childPos) return null
                         const childTopY = childPos.y
-                        const childCenterX = childPos.x + 48
+                        const childCenterX = childPos.x + (window.innerWidth < 640 ? 38 : 48)
 
-                        const midY = parentBottomY + 34
+                        const midY = parentBottomY + (window.innerWidth < 640 ? 25 : 34)
 
                         return (
                           <g key={`line-${parentId}-${childId}`}>
                             <path
                               d={`M ${parentCenterX} ${parentBottomY}
-                                  L ${parentCenterX} ${midY}
-                                  L ${childCenterX} ${midY}
-                                  L ${childCenterX} ${childTopY}`}
+                                L ${parentCenterX} ${midY}
+                                L ${childCenterX} ${midY}
+                                L ${childCenterX} ${childTopY}`}
                               fill="none"
                               strokeLinecap="round"
+                              strokeLinejoin="round"
                             />
                           </g>
                         )
@@ -306,7 +339,7 @@ export default function TreeView({ onLogout }) {
                     })}
                   </g>
 
-                  {/* Nodes */}
+                  {/* Nodes - MOBILE FRIENDLY SIZING */}
                   {filteredMembers.map((m) => {
                     const pos = layout.coords[m._id]
                     if (!pos) return null
@@ -314,9 +347,11 @@ export default function TreeView({ onLogout }) {
                     const isRoot = roots.some((r) => r._id === m._id)
                     const hasSpouse = spouseMap[m._id]
 
-                    const borderColor = isRoot ? "#4F46E5" : hasSpouse ? "#10B981" : "#6366F1"
+                    const borderColor = isRoot ? "#0ea5e9" : hasSpouse ? "#10b981" : "#0369a1"
 
                     const gradientId = isRoot ? "nodeGradientPrimary" : "nodeGradientSecondary"
+                    const nodeR = window.innerWidth < 640 ? 38 : 48  // Smaller nodes on mobile
+                    const nodeCX = window.innerWidth < 640 ? 38 : 48
 
                     return (
                       <g
@@ -326,37 +361,51 @@ export default function TreeView({ onLogout }) {
                         onClick={() => openMember(m)}
                       >
                         <circle
-                          cx="48"
-                          cy="48"
-                          r="48"
+                          cx={nodeCX}
+                          cy={nodeCX}
+                          r={nodeR}
                           fill={`url(#${gradientId})`}
                           stroke={borderColor}
-                          strokeWidth="3"
+                          strokeWidth={window.innerWidth < 640 ? "2.5" : "3"}
                           filter="url(#softShadow)"
                         />
                         {m.photo && (
                           <clipPath id={`clip-${m._id}`}>
-                            <circle cx="48" cy="48" r="43" />
+                            <circle cx={nodeCX} cy={nodeCX} r={window.innerWidth < 640 ? 33 : 43} />
                           </clipPath>
                         )}
                         {m.photo ? (
                           <image
                             href={m.photo}
-                            x="5"
-                            y="5"
-                            width="86"
-                            height="86"
+                            x={window.innerWidth < 640 ? "5" : "5"}
+                            y={window.innerWidth < 640 ? "5" : "5"}
+                            width={window.innerWidth < 640 ? "66" : "86"}
+                            height={window.innerWidth < 640 ? "66" : "86"}
                             clipPath={`url(#clip-${m._id})`}
                             preserveAspectRatio="xMidYMid slice"
                           />
                         ) : (
-                          <text x="48" y="52" textAnchor="middle" fontSize="26" fill="#312E81" fontWeight="700">
+                          <text
+                            x={nodeCX}
+                            y={window.innerWidth < 640 ? "45" : "52"}
+                            textAnchor="middle"
+                            fontSize={window.innerWidth < 640 ? "20" : "26"}
+                            fill="white"
+                            fontWeight="700"
+                          >
                             {m.name?.charAt(0)?.toUpperCase() || "?"}
                           </text>
                         )}
-                        <foreignObject x="-40" y="102" width="176" height="62">
-                          <div className="text-center">
-                            <div className="text-lg font-semibold text-slate-100 truncate">{m.name}</div>
+                        <foreignObject 
+                          x={window.innerWidth < 640 ? "-35" : "-40"} 
+                          y={window.innerWidth < 640 ? "82" : "102"} 
+                          width={window.innerWidth < 640 ? "140" : "176"} 
+                          height={window.innerWidth < 640 ? "50" : "62"}
+                        >
+                          <div className="text-center p-1">
+                            <div className="text-xs sm:text-sm font-semibold text-slate-100 truncate px-1">
+                              {m.name}
+                            </div>
                           </div>
                         </foreignObject>
                       </g>
@@ -368,113 +417,181 @@ export default function TreeView({ onLogout }) {
           </div>
         )}
 
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="card bg-gradient-to-br from-indigo-500 to-sky-500 text-white shadow-lg p-4 rounded-lg">
-            <p className="text-xs opacity-90 font-medium tracking-wide uppercase">Total Members</p>
-            <p className="text-3xl font-extrabold mt-1">{members.length}</p>
+        {/* Statistics - MOBILE FRIENDLY */}
+        <div className="mt-6 sm:mt-10 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <div className="card bg-gradient-to-br from-blue-900 to-blue-800 text-white border-blue-500/30 p-3 sm:p-4 rounded-xl">
+            <p className="text-xs opacity-90 font-medium tracking-wide uppercase">
+              Total Members
+            </p>
+            <p className="text-2xl sm:text-3xl font-extrabold mt-1 sm:mt-2">{members.length}</p>
           </div>
-          <div className="card bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg p-4 rounded-lg">
-            <p className="text-xs opacity-90 font-medium tracking-wide uppercase">Total Relationships</p>
-            <p className="text-3xl font-extrabold mt-1">{relationships.length}</p>
+          <div className="card bg-gradient-to-br from-emerald-900 to-emerald-800 text-white border-emerald-500/30 p-3 sm:p-4 rounded-xl">
+            <p className="text-xs opacity-90 font-medium tracking-wide uppercase">
+              Relationships
+            </p>
+            <p className="text-2xl sm:text-3xl font-extrabold mt-1 sm:mt-2">{relationships.length}</p>
           </div>
-          <div className="card bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-lg p-4 rounded-lg">
-            <p className="text-xs opacity-90 font-medium tracking-wide uppercase">Generations</p>
-            <p className="text-3xl font-extrabold mt-1">{generations.length}</p>
+          <div className="card bg-gradient-to-br from-purple-900 to-purple-800 text-white border-purple-500/30 p-3 sm:p-4 rounded-xl">
+            <p className="text-xs opacity-90 font-medium tracking-wide uppercase">
+              Generations
+            </p>
+            <p className="text-2xl sm:text-3xl font-extrabold mt-1 sm:mt-2">{generations.length}</p>
           </div>
-          <div className="card bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg p-4 rounded-lg">
-            <p className="text-xs opacity-90 font-medium tracking-wide uppercase">Avg Members / Gen</p>
-            <p className="text-3xl font-extrabold mt-1">
+          <div className="card bg-gradient-to-br from-amber-900 to-orange-900 text-white border-amber-500/30 p-3 sm:p-4 rounded-xl">
+            <p className="text-xs opacity-90 font-medium tracking-wide uppercase">
+              Avg/Gen
+            </p>
+            <p className="text-2xl sm:text-3xl font-extrabold mt-1 sm:mt-2">
               {generations.length > 0 ? (members.length / generations.length).toFixed(1) : "0.0"}
             </p>
           </div>
         </div>
       </main>
 
+      {/* Right-side detail drawer - FULL SCREEN ON MOBILE */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white/95 backdrop-blur shadow-2xl border-l border-slate-200 z-40 transform transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-gradient-to-b from-slate-900 to-slate-800 shadow-2xl border-l border-slate-700 z-40 transform transition-transform duration-300 ease-out overflow-hidden ${
           selectedMember ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {selectedMember && (
           <div className="h-full flex flex-col">
-            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="text-base font-semibold text-slate-900">{selectedMember.name}</h3>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-700 flex items-center justify-between bg-gradient-to-r from-blue-900/20 to-cyan-900/20 backdrop-blur">
+              <h3 className="text-base sm:text-lg font-bold text-blue-100 truncate">{selectedMember.name}</h3>
               <button
                 type="button"
                 onClick={closeMember}
-                className="text-slate-500 hover:text-slate-800 text-2xl leading-none"
+                className="text-slate-400 hover:text-slate-200 text-xl sm:text-2xl leading-none transition p-1 -m-1 rounded-full hover:bg-slate-800"
               >
                 ×
               </button>
             </div>
 
-            <div className="p-6 space-y-5 overflow-y-auto flex-1">
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full border-4 border-indigo-500 bg-gradient-to-br from-indigo-50 to-sky-50 flex items-center justify-center overflow-hidden shadow-md flex-shrink-0">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
+              {/* Profile Section */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-blue-500/50 bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0">
                   {selectedMember.photo ? (
                     <img
-                      src={selectedMember.photo || "/placeholder.svg"}
+                      src={selectedMember.photo}
                       alt={selectedMember.name}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-2xl font-semibold text-indigo-700">
+                    <span className="text-2xl sm:text-3xl font-bold text-white">
                       {selectedMember.name?.charAt(0)?.toUpperCase()}
                     </span>
                   )}
                 </div>
-                <div>
-                  <p className="font-semibold text-slate-900">{selectedMember.name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-base sm:text-lg text-slate-100 truncate">{selectedMember.name}</p>
                   {selectedMember.gender && (
-                    <p className="text-sm text-slate-600 capitalize">{selectedMember.gender}</p>
-                  )}
-                  {selectedMember.birthDate && (
-                    <p className="text-xs text-slate-500">
-                      {new Date(selectedMember.birthDate).getFullYear()}{" "}
-                      {selectedMember.deathDate ? `- ${new Date(selectedMember.deathDate).getFullYear()}` : "- Present"}
-                    </p>
-                  )}
-                  {typeof selectedMember.generation === "number" && (
-                    <p className="text-xs text-indigo-600 mt-1 font-medium">
-                      {getGenerationLabel(selectedMember.generation)}
+                    <p className="text-xs sm:text-sm text-slate-400 capitalize mt-0.5">
+                      {selectedMember.gender}
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4 space-y-3">
-                {selectedMember.occupation && (
+              {/* Personal Information */}
+              <div className="border-t border-slate-700 pt-3 sm:pt-4 space-y-3 sm:space-y-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  Personal Information
+                </p>
+
+                {selectedMember.birthDate && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase">Occupation</p>
-                    <p className="text-slate-900">{selectedMember.occupation}</p>
+                    <p className="text-xs font-semibold text-slate-400 uppercase">Birth Date</p>
+                    <p className="text-slate-200 mt-1 text-sm">
+                      {new Date(selectedMember.birthDate).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
                   </div>
                 )}
 
-                {selectedMember.email && (
+                {selectedMember.deathDate && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase">Email</p>
-                    <p className="text-slate-900 text-sm break-all">{selectedMember.email}</p>
-                  </div>
-                )}
-
-                {selectedMember.phone && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase">Phone</p>
-                    <p className="text-slate-900">{selectedMember.phone}</p>
-                  </div>
-                )}
-
-                {selectedMember.biography && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase">Biography</p>
-                    <p className="text-slate-900 text-sm">{selectedMember.biography}</p>
+                    <p className="text-xs font-semibold text-slate-400 uppercase">Death Date</p>
+                    <p className="text-slate-200 mt-1 text-sm">
+                      {new Date(selectedMember.deathDate).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
                   </div>
                 )}
               </div>
+
+              {/* Professional Information */}
+              {selectedMember.occupation && (
+                <div className="border-t border-slate-700 pt-3 sm:pt-4">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Occupation
+                  </p>
+                  <p className="text-slate-200 mt-2 text-sm">{selectedMember.occupation}</p>
+                </div>
+              )}
+
+              {/* Contact Information */}
+              <div className="border-t border-slate-700 pt-3 sm:pt-4 space-y-3">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Contact Information
+                </p>
+
+                {selectedMember.contactInfo?.email && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">Email</p>
+                    <p className="text-slate-300 text-sm break-all mt-1">
+                      {selectedMember.contactInfo.email}
+                    </p>
+                  </div>
+                )}
+
+                {selectedMember.contactInfo?.phone && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">Phone</p>
+                    <p className="text-slate-300 text-sm mt-1">
+                      {selectedMember.contactInfo.phone}
+                    </p>
+                  </div>
+                )}
+
+                {!selectedMember.contactInfo?.email &&
+                  !selectedMember.contactInfo?.phone && (
+                    <p className="text-xs text-slate-500 italic">
+                      No contact information available
+                    </p>
+                  )}
+              </div>
+
+              {/* Biography */}
+              {selectedMember.bio && (
+                <div className="border-t border-slate-700 pt-3 sm:pt-4">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Biography
+                  </p>
+                  <p className="text-slate-300 text-sm mt-3 leading-relaxed">
+                    {selectedMember.bio}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
+
+      {/* Backdrop to close drawer when clicking outside */}
+      {selectedMember && (
+        <button
+          type="button"
+          onClick={closeMember}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30"
+        />
+      )}
     </div>
   )
 }

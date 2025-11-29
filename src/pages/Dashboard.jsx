@@ -140,14 +140,13 @@ export default function Dashboard({ onLogout }) {
   const filteredMembers = members.filter((member) => member.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
       <Header onLogout={onLogout} />
 
       <main className="container py-8">
-        {/* Info Section */}
-        <div className="mb-8 card bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-          <h2 className="text-2xl font-bold mb-2">Welcome, {user?.username}!</h2>
-          <p className="opacity-90">
+        <div className="mb-8 card bg-gradient-to-r from-blue-900 to-cyan-900 border-blue-500/30">
+          <h2 className="text-3xl font-bold mb-2 text-blue-100">Welcome, {user?.username}!</h2>
+          <p className="text-slate-300 font-medium">
             {isAdmin
               ? "You have full access to manage all family members and relationships."
               : "You can view all family members and their details."}
@@ -156,38 +155,42 @@ export default function Dashboard({ onLogout }) {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">{error}</div>
+          <div className="mb-6 bg-red-900/30 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg font-medium">
+            {error}
+          </div>
         )}
 
         {isAdmin && showViewerForm && (
-          <div className="mb-8 card bg-white border-l-4 border-green-600">
-            <h3 className="text-xl font-bold mb-4">Create Viewer Account</h3>
+          <div className="mb-8 card bg-gradient-to-r from-green-900 to-emerald-900 border-green-500/30">
+            <h3 className="text-xl font-bold mb-4 text-green-100">Create Viewer Account</h3>
             <form onSubmit={handleCreateViewer} className="space-y-4">
               {viewerError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">{viewerError}</div>
+                <div className="bg-red-900/30 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg text-sm">
+                  {viewerError}
+                </div>
               )}
               {viewerSuccess && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+                <div className="bg-green-900/30 border border-green-500/50 text-green-300 px-4 py-3 rounded-lg text-sm">
                   {viewerSuccess}
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Username for Viewer</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Username for Viewer</label>
                 <input
                   type="text"
                   value={viewerFormData.username}
                   onChange={(e) => setViewerFormData({ ...viewerFormData, username: e.target.value })}
-                  className="input-field w-full"
+                  className="input-field"
                   placeholder="Enter viewer username"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Password for Viewer</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Password for Viewer</label>
                 <input
                   type="password"
                   value={viewerFormData.password}
                   onChange={(e) => setViewerFormData({ ...viewerFormData, password: e.target.value })}
-                  className="input-field w-full"
+                  className="input-field"
                   placeholder="Enter viewer password"
                 />
               </div>
@@ -195,11 +198,7 @@ export default function Dashboard({ onLogout }) {
                 <button type="submit" className="btn btn-primary">
                   Create Viewer
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowViewerForm(false)}
-                  className="btn bg-gray-300 text-gray-700 hover:bg-gray-400"
-                >
+                <button type="button" onClick={() => setShowViewerForm(false)} className="btn btn-secondary">
                   Cancel
                 </button>
               </div>
@@ -209,8 +208,8 @@ export default function Dashboard({ onLogout }) {
 
         {/* Forms */}
         {showMemberForm && (
-          <div className="mb-8 card bg-white border-l-4 border-blue-600">
-            <h3 className="text-xl font-bold mb-4">{editingMember ? "Edit Member" : "Add New Member"}</h3>
+          <div className="mb-8 card bg-gradient-to-r from-blue-900 to-slate-900 border-blue-500/30">
+            <h3 className="text-xl font-bold mb-4 text-blue-100">{editingMember ? "Edit Member" : "Add New Member"}</h3>
             <MemberForm
               initialData={editingMember}
               onSubmit={editingMember ? handleUpdateMember : handleAddMember}
@@ -224,8 +223,8 @@ export default function Dashboard({ onLogout }) {
         )}
 
         {showRelationshipForm && (
-          <div className="mb-8 card bg-white border-l-4 border-purple-600">
-            <h3 className="text-xl font-bold mb-4">Create Relationship</h3>
+          <div className="mb-8 card bg-gradient-to-r from-purple-900 to-slate-900 border-purple-500/30">
+            <h3 className="text-xl font-bold mb-4 text-purple-100">Create Relationship</h3>
             <RelationshipForm
               members={members}
               onSubmit={handleCreateRelationship}
@@ -243,7 +242,7 @@ export default function Dashboard({ onLogout }) {
               placeholder="Search family members..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field w-full"
+              className="input-field"
             />
           </div>
           {isAdmin && (
@@ -251,12 +250,12 @@ export default function Dashboard({ onLogout }) {
               <button onClick={() => setShowMemberForm(true)} className="btn btn-primary">
                 + Add Member
               </button>
-              <button onClick={() => setShowRelationshipForm(true)} className="btn btn-secondary">
+              <button onClick={() => setShowRelationshipForm(true)} className="btn btn-primary">
                 + Create Relationship
               </button>
               <button
                 onClick={() => setShowViewerForm(true)}
-                className="btn bg-green-600 text-white hover:bg-green-700"
+                className="btn bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 shadow-lg"
               >
                 + Create Viewer
               </button>
@@ -266,12 +265,12 @@ export default function Dashboard({ onLogout }) {
 
         {/* Members Grid */}
         {loading && members.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">Loading members...</p>
+          <div className="text-center py-16">
+            <p className="text-slate-400 text-lg">Loading members...</p>
           </div>
         ) : filteredMembers.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No members found</p>
+          <div className="text-center py-16">
+            <p className="text-slate-400 text-lg">No members found</p>
             {isAdmin && (
               <button onClick={() => setShowMemberForm(true)} className="mt-4 btn btn-primary">
                 Add the first member

@@ -7,9 +7,10 @@ export default function MemberCard({ member, onDelete, onEdit }) {
   const isAdmin = user?.role === "admin"
 
   return (
-    <div className="card hover:shadow-xl transition-all duration-300 group">
+    /* Updated card with dark theme and enhanced styling */
+    <div className="card hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 group border border-slate-700 hover:border-blue-500/50">
       <div className="flex flex-col h-full">
-        <div className="w-full h-40 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg overflow-hidden mb-4 flex items-center justify-center">
+        <div className="w-full h-40 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-lg overflow-hidden mb-4 flex items-center justify-center group-hover:shadow-lg transition">
           {member.photo ? (
             <img src={member.photo || "/placeholder.svg"} alt={member.name} className="w-full h-full object-cover" />
           ) : (
@@ -17,22 +18,23 @@ export default function MemberCard({ member, onDelete, onEdit }) {
           )}
         </div>
 
-        <h3 className="font-bold text-lg text-gray-800 mb-1">{member.name}</h3>
+        <h3 className="font-bold text-lg text-blue-100 mb-3">{member.name}</h3>
 
-        <div className="text-sm text-gray-600 space-y-1 mb-3 flex-grow">
+        <div className="text-sm text-slate-400 space-y-2 mb-4 flex-grow">
           {member.gender && (
             <p>
-              <span className="font-medium">Gender:</span> {member.gender}
+              <span className="font-medium text-slate-300">Gender:</span>{" "}
+              <span className="capitalize">{member.gender}</span>
             </p>
           )}
           {member.occupation && (
             <p>
-              <span className="font-medium">Occupation:</span> {member.occupation}
+              <span className="font-medium text-slate-300">Occupation:</span> {member.occupation}
             </p>
           )}
           {member.birthDate && (
             <p>
-              <span className="font-medium">Born:</span> {new Date(member.birthDate).getFullYear()}
+              <span className="font-medium text-slate-300">Born:</span> {new Date(member.birthDate).getFullYear()}
             </p>
           )}
         </div>

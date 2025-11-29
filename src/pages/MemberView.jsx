@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import Header from "../components/Header"
 import { memberAPI, relationshipAPI } from "../utils/api"
@@ -12,10 +12,22 @@ export default function MemberView({ onLogout }) {
   const [relationships, setRelationships] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const modalRef = useRef(null)
 
   useEffect(() => {
     loadMemberData()
   }, [id])
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (modalRef.current && e.target === modalRef.current) {
+        navigate(-1)
+      }
+    }
+
+    window.addEventListener("click", handleOutsideClick)
+    return () => window.removeEventListener("click", handleOutsideClick)
+  }, [navigate])
 
   const loadMemberData = async () => {
     try {
@@ -34,14 +46,24 @@ export default function MemberView({ onLogout }) {
   }
 
   const getRelatedMembers = () => {
-    return relationships.map((rel) => {
+    const members = {}
+
+    relationships.forEach((rel) => {
       const relatedMember = rel.member1Id._id === id ? rel.member2Id : rel.member1Id
-      return {
-        member: relatedMember,
-        relationshipType:
-          rel.member1Id._id === id ? rel.relationshipType : getOppositeRelationship(rel.relationshipType),
+      const relationshipType =
+        rel.member1Id._id === id ? rel.relationshipType : getOppositeRelationship(rel.relationshipType)
+
+      const key = `${relatedMember._id}-${relationshipType}`
+
+      if (!members[key]) {
+        members[key] = {
+          member: relatedMember,
+          relationshipType: relationshipType,
+        }
       }
     })
+
+    return Object.values(members)
   }
 
   const getOppositeRelationship = (type) => {
@@ -50,18 +72,41 @@ export default function MemberView({ onLogout }) {
       child: "parent",
       spouse: "spouse",
       sibling: "sibling",
+      grandparent: "grandchild",
+      grandchild: "grandparent",
     }
     return opposites[type] || type
   }
 
+  const groupRelationships = () => {
+    const relatedMembers = getRelatedMembers()
+    const grouped = {
+      parent: [],
+      sibling: [],
+      spouse: [],
+      child: [],
+      grandparent: [],
+      grandchild: [],
+    }
+
+    relatedMembers.forEach((rel) => {
+      if (grouped[rel.relationshipType]) {
+        grouped[rel.relationshipType].push(rel)
+      }
+    })
+
+    return grouped
+  }
+
+  const groupedRelationships = groupRelationships()
   const relatedMembers = getRelatedMembers()
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
         <Header onLogout={onLogout} />
         <div className="container py-8">
-          <p className="text-center text-gray-500">Loading member details...</p>
+          <p className="text-center text-slate-400">Loading member details...</p>
         </div>
       </div>
     )
@@ -69,11 +114,14 @@ export default function MemberView({ onLogout }) {
 
   if (error || !member) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
         <Header onLogout={onLogout} />
         <div className="container py-8">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>
-          <button onClick={() => navigate(-1)} className="btn btn-primary">
+          <div className="bg-red-900/30 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4">{error}</div>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+          >
             Go Back
           </button>
         </div>
@@ -82,120 +130,279 @@ export default function MemberView({ onLogout }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header onLogout={onLogout} />
+    <div
+      ref={modalRef}
+      className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto"
+      onClick={(e) => e.target === modalRef.current && navigate(-1)}
+    >
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+        <Header onLogout={onLogout} />
 
-      <main className="container py-8">
-        <button onClick={() => navigate(-1)} className="btn btn-secondary mb-6">
-          ← Go Back
-        </button>
+        <main className="container py-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-6 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg transition flex items-center gap-2"
+          >
+            ← Go Back
+          </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Member Profile */}
-          <div className="md:col-span-1">
-            <div className="card">
-              <div className="w-full h-64 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg overflow-hidden mb-6 flex items-center justify-center">
-                {member.photo ? (
-                  <img
-                    src={member.photo || "/placeholder.svg"}
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-white text-6xl font-bold">{member.name.charAt(0).toUpperCase()}</div>
-                )}
-              </div>
-
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">{member.name}</h1>
-
-              <div className="space-y-3 text-sm">
-                <div className="bg-blue-50 p-3 rounded">
-                  <p className="text-gray-600 font-medium">Gender</p>
-                  <p className="text-gray-800 capitalize">{member.gender}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Member Profile Card */}
+            <div className="lg:col-span-1">
+              <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
+                <div className="w-full h-64 bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 flex items-center justify-center overflow-hidden">
+                  {member.photo ? (
+                    <img
+                      src={member.photo || "/placeholder.svg"}
+                      alt={member.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-white text-6xl font-bold">{member.name.charAt(0).toUpperCase()}</div>
+                  )}
                 </div>
 
-                {member.birthDate && (
-                  <div className="bg-green-50 p-3 rounded">
-                    <p className="text-gray-600 font-medium">Born</p>
-                    <p className="text-gray-800">{new Date(member.birthDate).toLocaleDateString()}</p>
-                  </div>
-                )}
+                <div className="p-6">
+                  <h1 className="text-3xl font-bold text-white mb-4">{member.name}</h1>
 
-                {member.deathDate && (
-                  <div className="bg-gray-100 p-3 rounded">
-                    <p className="text-gray-600 font-medium">Died</p>
-                    <p className="text-gray-800">{new Date(member.deathDate).toLocaleDateString()}</p>
-                  </div>
-                )}
+                  <div className="space-y-3">
+                    {/* Gender */}
+                    <div className="bg-slate-700/50 border border-slate-600 p-3 rounded-lg">
+                      <p className="text-slate-400 text-sm font-medium">Gender</p>
+                      <p className="text-slate-100 capitalize font-semibold">{member.gender}</p>
+                    </div>
 
-                {member.occupation && (
-                  <div className="bg-purple-50 p-3 rounded">
-                    <p className="text-gray-600 font-medium">Occupation</p>
-                    <p className="text-gray-800">{member.occupation}</p>
-                  </div>
-                )}
+                    {/* Birth Date */}
+                    {member.birthDate && (
+                      <div className="bg-slate-700/50 border border-slate-600 p-3 rounded-lg">
+                        <p className="text-slate-400 text-sm font-medium">Date of Birth</p>
+                        <p className="text-slate-100 font-semibold">
+                          {new Date(member.birthDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
 
-                {member.generation >= 0 && (
-                  <div className="bg-yellow-50 p-3 rounded">
-                    <p className="text-gray-600 font-medium">Generation</p>
-                    <p className="text-gray-800">Level {member.generation}</p>
+                    {/* Death Date */}
+                    {member.deathDate && (
+                      <div className="bg-slate-700/50 border border-slate-600 p-3 rounded-lg">
+                        <p className="text-slate-400 text-sm font-medium">Date of Death</p>
+                        <p className="text-slate-100 font-semibold">
+                          {new Date(member.deathDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Occupation */}
+                    {member.occupation && (
+                      <div className="bg-slate-700/50 border border-slate-600 p-3 rounded-lg">
+                        <p className="text-slate-400 text-sm font-medium">Occupation</p>
+                        <p className="text-slate-100 font-semibold">{member.occupation}</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Member Details */}
-          <div className="md:col-span-2 space-y-6">
-            {member.bio && (
-              <div className="card">
-                <h2 className="text-xl font-bold mb-3 text-gray-800">Biography</h2>
-                <p className="text-gray-700 leading-relaxed">{member.bio}</p>
-              </div>
-            )}
-
-            {member.contactInfo && (member.contactInfo.email || member.contactInfo.phone) && (
-              <div className="card">
-                <h2 className="text-xl font-bold mb-3 text-gray-800">Contact Information</h2>
-                <div className="space-y-2">
-                  {member.contactInfo.email && (
-                    <a href={`mailto:${member.contactInfo.email}`} className="text-blue-600 hover:underline">
-                      📧 {member.contactInfo.email}
-                    </a>
-                  )}
-                  {member.contactInfo.phone && (
-                    <a href={`tel:${member.contactInfo.phone}`} className="text-blue-600 hover:underline block">
-                      📞 {member.contactInfo.phone}
-                    </a>
-                  )}
+            {/* Member Details */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Biography */}
+              {member.bio && (
+                <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+                  <h2 className="text-2xl font-bold text-white mb-4">Biography</h2>
+                  <p className="text-slate-300 leading-relaxed">{member.bio}</p>
                 </div>
-              </div>
-            )}
+              )}
 
-            {relatedMembers.length > 0 && (
-              <div className="card">
-                <h2 className="text-xl font-bold mb-4 text-gray-800">Family Relationships</h2>
-                <div className="space-y-3">
-                  {relatedMembers.map((rel, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                    >
+              {/* Contact Information */}
+              {member.contactInfo && (member.contactInfo.email || member.contactInfo.phone) && (
+                <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+                  <h2 className="text-2xl font-bold text-white mb-4">Contact Information</h2>
+                  <div className="space-y-3">
+                    {member.contactInfo.email && (
+                      <a
+                        href={`mailto:${member.contactInfo.email}`}
+                        className="flex items-center gap-3 text-cyan-400 hover:text-cyan-300 transition"
+                      >
+                        <span className="text-xl">✉️</span>
+                        {member.contactInfo.email}
+                      </a>
+                    )}
+                    {member.contactInfo.phone && (
+                      <a
+                        href={`tel:${member.contactInfo.phone}`}
+                        className="flex items-center gap-3 text-cyan-400 hover:text-cyan-300 transition"
+                      >
+                        <span className="text-xl">📞</span>
+                        {member.contactInfo.phone}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Family Relationships */}
+              {relatedMembers.length > 0 && (
+                <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+                  <h2 className="text-2xl font-bold text-white mb-6">Family Relationships</h2>
+
+                  <div className="space-y-6">
+                    {/* Parents */}
+                    {groupedRelationships.parent.length > 0 && (
                       <div>
-                        <p className="text-sm text-gray-600 capitalize">{rel.relationshipType}</p>
-                        <p className="font-medium text-gray-800">{rel.member.name}</p>
+                        <h3 className="text-lg font-semibold text-cyan-400 mb-3 capitalize">Parents</h3>
+                        <div className="space-y-2">
+                          {groupedRelationships.parent.map((rel) => (
+                            <div
+                              key={rel.member._id}
+                              className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-lg hover:bg-slate-700 hover:border-cyan-500 transition"
+                            >
+                              <div>
+                                <p className="text-slate-100 font-semibold">{rel.member.name}</p>
+                              </div>
+                              <button
+                                onClick={() => navigate(`/member/${rel.member._id}`)}
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition"
+                              >
+                                View Profile
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <button onClick={() => navigate(`/member/${rel.member._id}`)} className="btn btn-primary text-sm">
-                        View Profile
-                      </button>
-                    </div>
-                  ))}
+                    )}
+
+                    {/* Siblings */}
+                    {groupedRelationships.sibling.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-cyan-400 mb-3 capitalize">Siblings</h3>
+                        <div className="space-y-2">
+                          {groupedRelationships.sibling.map((rel) => (
+                            <div
+                              key={rel.member._id}
+                              className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-lg hover:bg-slate-700 hover:border-cyan-500 transition"
+                            >
+                              <div>
+                                <p className="text-slate-100 font-semibold">{rel.member.name}</p>
+                              </div>
+                              <button
+                                onClick={() => navigate(`/member/${rel.member._id}`)}
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition"
+                              >
+                                View Profile
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Spouse */}
+                    {groupedRelationships.spouse.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-cyan-400 mb-3 capitalize">Spouse</h3>
+                        <div className="space-y-2">
+                          {groupedRelationships.spouse.map((rel) => (
+                            <div
+                              key={rel.member._id}
+                              className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-lg hover:bg-slate-700 hover:border-cyan-500 transition"
+                            >
+                              <div>
+                                <p className="text-slate-100 font-semibold">{rel.member.name}</p>
+                              </div>
+                              <button
+                                onClick={() => navigate(`/member/${rel.member._id}`)}
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition"
+                              >
+                                View Profile
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Children */}
+                    {groupedRelationships.child.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-cyan-400 mb-3 capitalize">Children</h3>
+                        <div className="space-y-2">
+                          {groupedRelationships.child.map((rel) => (
+                            <div
+                              key={rel.member._id}
+                              className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-lg hover:bg-slate-700 hover:border-cyan-500 transition"
+                            >
+                              <div>
+                                <p className="text-slate-100 font-semibold">{rel.member.name}</p>
+                              </div>
+                              <button
+                                onClick={() => navigate(`/member/${rel.member._id}`)}
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition"
+                              >
+                                View Profile
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Grandparents */}
+                    {groupedRelationships.grandparent.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-cyan-400 mb-3 capitalize">Grandparents</h3>
+                        <div className="space-y-2">
+                          {groupedRelationships.grandparent.map((rel) => (
+                            <div
+                              key={rel.member._id}
+                              className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-lg hover:bg-slate-700 hover:border-cyan-500 transition"
+                            >
+                              <div>
+                                <p className="text-slate-100 font-semibold">{rel.member.name}</p>
+                              </div>
+                              <button
+                                onClick={() => navigate(`/member/${rel.member._id}`)}
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition"
+                              >
+                                View Profile
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Grandchildren */}
+                    {groupedRelationships.grandchild.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-cyan-400 mb-3 capitalize">Grandchildren</h3>
+                        <div className="space-y-2">
+                          {groupedRelationships.grandchild.map((rel) => (
+                            <div
+                              key={rel.member._id}
+                              className="flex items-center justify-between p-3 bg-slate-700/50 border border-slate-600 rounded-lg hover:bg-slate-700 hover:border-cyan-500 transition"
+                            >
+                              <div>
+                                <p className="text-slate-100 font-semibold">{rel.member.name}</p>
+                              </div>
+                              <button
+                                onClick={() => navigate(`/member/${rel.member._id}`)}
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition"
+                              >
+                                View Profile
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

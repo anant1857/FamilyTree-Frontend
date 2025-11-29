@@ -12,30 +12,33 @@ export default function Header({ onLogout }) {
   }
 
   return (
-    <header className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="container flex justify-between items-center py-4">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+    /* Updated header with dark theme styling */
+    <header className="bg-gradient-to-r from-slate-900 to-slate-800 shadow-2xl sticky top-0 z-10 border-b border-slate-700">
+      <div className=" flex justify-between  py-4">
+        <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-90 transition">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg">
             <span className="text-white font-bold text-lg">FT</span>
           </div>
-          <span className="font-bold text-xl text-gray-800">Family Tree</span>
+          <span className="font-bold text-xl text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+            Family Tree
+          </span>
         </Link>
 
-        <nav className="flex items-center gap-6">
-          <Link to="/dashboard" className="text-gray-700 hover:text-blue-600 font-medium transition">
+        <nav className="flex items-center gap-8">
+          <Link to="/dashboard" className="text-slate-300 hover:text-blue-400 font-medium transition duration-200">
             Dashboard
           </Link>
-          <Link to="/tree" className="text-gray-700 hover:text-blue-600 font-medium transition">
+          <Link to="/tree" className="text-slate-300 hover:text-blue-400 font-medium transition duration-200">
             Tree View
           </Link>
         </nav>
 
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Welcome</p>
-            <p className="font-semibold text-gray-800">{user?.username}</p>
+        <div className="flex items-center gap-6">
+          <div className="text-right hidden sm:block">
+            <p className="text-xs text-slate-500 font-medium">Welcome</p>
+            <p className="font-semibold text-blue-400">{user?.username}</p>
           </div>
-          <button onClick={handleLogout} className="btn btn-primary">
+          <button onClick={handleLogout} className="btn btn-primary text-sm">
             Logout
           </button>
         </div>
