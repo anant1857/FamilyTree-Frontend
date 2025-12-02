@@ -49,9 +49,22 @@ export default function MemberView({ onLogout }) {
     const members = {}
 
     relationships.forEach((rel) => {
-      const relatedMember = rel.member1Id._id === id ? rel.member2Id : rel.member1Id
-      const relationshipType =
-        rel.member1Id._id === id ? rel.relationshipType : getOppositeRelationship(rel.relationshipType)
+      let relatedMember
+      let relationshipType
+
+      if (rel.member1Id._id === id) {
+        // Current user is member1
+        // If relationshipType is "parent", it means current user IS PARENT of member2
+        // So from current user's perspective, member2 should be categorized as "child"
+        // Therefore, we need to invert the relationship type
+        relatedMember = rel.member2Id
+        relationshipType = getOppositeRelationship(rel.relationshipType)
+      } else {
+        // Current user is member2
+        // The relationship type is as stored in the database
+        relatedMember = rel.member1Id
+        relationshipType = rel.relationshipType
+      }
 
       const key = `${relatedMember._id}-${relationshipType}`
 
