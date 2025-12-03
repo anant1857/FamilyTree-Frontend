@@ -208,7 +208,7 @@ export default function Dashboard({ onLogout }) {
 
         {/* Forms */}
         {showMemberForm && (
-          <div className="mb-8 card bg-gradient-to-r from-blue-900 to-slate-900 border-blue-500/30">
+          <div className="mb-8 card bg-gradient-to-r from-blue-500 to-slate-500 border-blue-500/30">
             <h3 className="text-xl font-bold mb-4 text-blue-100">{editingMember ? "Edit Member" : "Add New Member"}</h3>
             <MemberForm
               initialData={editingMember}
